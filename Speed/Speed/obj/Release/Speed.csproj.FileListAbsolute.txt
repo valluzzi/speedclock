@@ -1,0 +1,9 @@
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\bin\Release\Speed.exe.config
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\bin\Release\Speed.exe
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\bin\Release\Speed.pdb
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.csprojResolveAssemblyReference.cache
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.Form1.resources
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.Properties.Resources.resources
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.csproj.GenerateResource.Cache
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.exe
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.pdb
