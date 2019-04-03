@@ -14,7 +14,6 @@ namespace Speed
 
         DateTime T;
         string STATE = "IDLE";
-        Label[] labels;
 
 
         public Form1()

@@ -24,7 +24,8 @@
 //-------------------------------------------------------------------------------
 
 #include <SPI.h>
-#include <WiFi101.h>
+//#include <WiFi101.h>
+#include <WiFiNINA.h>
 #include <WiFiUdp.h>
 #include "HX711.h"
 #include "arduino_secrets.h" 
@@ -67,8 +68,8 @@ int status = WL_IDLE_STATUS;
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;        // your network password (use for WPA, or use as key for WEP)
-unsigned int localPort  = 2390;      // local port to listen on
-unsigned int remotePort = 11000;
+unsigned int localPort  = 10999;      // local port to listen on
+unsigned int remotePort = 11000;      // remote display port
 char cmd[64]; //buffer command to broadcast  
 
 WiFiUDP Udp;
