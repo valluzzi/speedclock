@@ -1,2 +1,2 @@
-#define SECRET_SSID "Casa"
-#define SECRET_PASS "annaanna"
+#define SECRET_SSID ""
+#define SECRET_PASS ""
