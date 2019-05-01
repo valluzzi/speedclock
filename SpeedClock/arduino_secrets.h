@@ -1,2 +1,2 @@
-#define SECRET_SSID "Vodafone-GECOSISTEMA"
-#define SECRET_PASS "gecosistema2001"
+#define SECRET_SSID ""
+#define SECRET_PASS ""
