@@ -24,21 +24,25 @@
 //-------------------------------------------------------------------------------
 
 #include <SPI.h>
-#include <WiFi101.h>
+//#include <WiFi101.h> //MKR1000
+#include <WiFiNINA.h>  //MKR1010
 #include <WiFiUdp.h>
 #include "arduino_secrets.h" 
 
 
-const int BUTTON_PIN = 4;   
+const int BUTTON_PIN = 2;   
+int MIN_POLLING_INTERVAL = 1;
+int MAX_POLLING_INTERVAL = 5000;
 int POLLING_INTERVAL = 1000;
-
+unsigned long mills_from_last_imalive =0;
+unsigned long mills_active =0;
 
 enum state {
 
-  READY,
   IDLE,
-  ARMED,
   RUNNING,
+  SLEEP, 
+  DEAD
 };
 
 state STATE;
@@ -48,15 +52,19 @@ int status = WL_IDLE_STATUS;
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;        // your network password (use for WPA, or use as key for WEP)
-unsigned int localPort  = 10999;      // local port to listen on
-unsigned int remotePort = 11000;
+unsigned int LOCAL_PORT  = 10999;      // local port to listen on
+unsigned int REMOTE_PORT = 11000;
 char cmd[64]; //buffer command to broadcast  
+char buff[255]; //buffer command to broadcast 
+int packetsize =0;
 
 WiFiUDP Udp;
 IPAddress broadcastIp(255,255,255,255);
 
 void setup() {
 
+  //WiFi.lowPowerMode();
+  
   // initialize the button pin as a input:
   pinMode(BUTTON_PIN, INPUT);
   
@@ -66,9 +74,124 @@ void setup() {
   // check for the presence of the shield:
   while (WiFi.status() == WL_NO_SHIELD) {
       Serial.println("WiFi shield not present");
-      delay(1000);
+      delay(POLLING_INTERVAL);
   }
 
+  WiFiConnect();
+  
+  STATE=IDLE;
+}
+
+void loop() {
+
+      if (STATE==IDLE || STATE==SLEEP){
+          packetsize = receivePacket(buff);
+
+          if (packetsize && strcmp(buff,"armed:")==0){
+              Serial.println(buff);
+              POLLING_INTERVAL = MIN_POLLING_INTERVAL*100;
+              STATE = IDLE;
+              mills_active = 0;
+              WiFi.noLowPowerMode();
+          }
+
+          if (packetsize && strcmp(buff,"start:")==0){
+              Serial.println(buff);
+              POLLING_INTERVAL = MIN_POLLING_INTERVAL;
+              STATE = RUNNING;
+              mills_active = 0;
+              WiFi.noLowPowerMode();
+          }
+      }
+
+      //STOP - BUTTON PRESSED - SLOW DOWN
+      if (STATE==RUNNING && digitalRead(BUTTON_PIN)==HIGH){
+          Serial.println("stop:");
+          repeated_broadcast("stop:"); 
+          POLLING_INTERVAL = 1000; 
+          STATE = IDLE; 
+      }
+
+      //SLEEP MODE AFTER 5-10 minutes
+      if ((STATE==IDLE || STATE==RUNNING) && mills_active>30000)  {
+          
+          Serial.println("SLEEP MODE");
+          POLLING_INTERVAL = MAX_POLLING_INTERVAL; 
+          STATE = SLEEP; 
+          WiFi.lowPowerMode();
+      }
+
+      if ((STATE==SLEEP) && mills_active>60000)  {
+          Serial.println("DEAD MODE");
+          POLLING_INTERVAL = MAX_POLLING_INTERVAL; 
+          STATE = DEAD; 
+          WiFi.end();
+          status = WL_IDLE_STATUS;
+      }
+      //WAKE UP BY BUTTON FROm SLEEP MODE
+      if (STATE==SLEEP && digitalRead(BUTTON_PIN)==HIGH){
+          Serial.println("Wake up!");
+          POLLING_INTERVAL = 1000; 
+          STATE = IDLE; 
+          mills_active=0;
+          WiFi.noLowPowerMode();
+      }
+      //WAKE UP BY BUTTON FROM DEAD MODE
+      if (STATE==DEAD && digitalRead(BUTTON_PIN)==HIGH){
+          Serial.println("WAKE UP FROM DEAD MODE!");
+          WiFiConnect();
+          POLLING_INTERVAL = 1000; 
+          STATE = IDLE;
+          mills_active=0; 
+          WiFi.noLowPowerMode();
+      }
+
+      //Periodically send an IMALIVE message
+      if (STATE==IDLE && mills_from_last_imalive>5000){
+
+          broadcast("imalive:");
+          mills_from_last_imalive = 0;
+      }
+      else{
+          mills_from_last_imalive+= POLLING_INTERVAL;
+      }
+
+      mills_active+=POLLING_INTERVAL;
+      delay(POLLING_INTERVAL);
+}
+
+int receivePacket(char* text){
+  int packetSize = Udp.parsePacket();
+  if (packetSize) {
+      // read the packet
+      int len = Udp.read(text, 255);
+      if (len > 0) text[len] = 0;
+  }
+  return packetSize;
+}
+
+void broadcast(char* text){
+
+    //WiFi.noLowPowerMode(); 
+    Udp.beginPacket(broadcastIp, REMOTE_PORT);
+    Udp.write(text);
+    Udp.endPacket();
+    //WiFi.lowPowerMode(); 
+    Serial.println(text);
+}
+
+void repeated_broadcast(char* text){
+
+    for(int j=1;j<=3;j++){
+       Udp.beginPacket(broadcastIp, REMOTE_PORT);
+       Udp.write(text);
+       Udp.endPacket();
+       delay(j*20);
+    }
+}
+
+
+void WiFiConnect(){
   // attempt to connect to WiFi network:
   while ( status != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
@@ -76,37 +199,12 @@ void setup() {
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
     status = WiFi.begin(ssid, pass);
 
-    // wait 10 seconds for connection:
+    // wait 2 seconds for connection:
     delay(2000);
   }
   Serial.println("Connected to wifi");
   printWiFiStatus();
-
-  Serial.println("\nStarting connection to server...");
-  // if you get a connection, report back via serial:
-  Udp.begin(localPort);
-
- 
-  broadcast("ready:");
-  STATE=RUNNING;
-}
-
-void loop() {
-      
-      if (STATE==RUNNING && digitalRead(BUTTON_PIN)==HIGH){
-          
-          broadcast("stop:");   
-      }
-      
-      delay(1);
-}
-
-void broadcast(char* text){
-
-    Udp.beginPacket(broadcastIp, remotePort);
-    Udp.write(text);
-    Udp.endPacket();
-    Serial.println(text);
+  Udp.begin(LOCAL_PORT);
 }
 
 void printWiFiStatus() {

@@ -9,26 +9,28 @@ namespace Speed
 {
     public partial class Form1 : Form
     {
+        static string ID = "0";
+        static int LOCAL_PORT  = 11000;
+        //static int REMOTE_PORT = 10999;
 
-        static int PORT = 11000;
-
-        DateTime T;
+        DateTime LastAliveFromScale;
+        DateTime t1;
         string STATE = "IDLE";
-
 
         public Form1()
         {
             InitializeComponent();
             UDPListener();
+            timer1.Interval = 1;
             timer1.Start();
-            
         }
 
         private void UDPListener()
         {
+
             Task.Run(async () =>
             {
-                using (var udpClient = new UdpClient(PORT))
+                using (var udpClient = new UdpClient(LOCAL_PORT))
                 {
                     while (true)
                     {
@@ -45,62 +47,95 @@ namespace Speed
 
 
         Action beep = Console.Beep;
-        private void parseMessage(string msg) {
+        private void parseMessage(string text) {
 
-            if (msg.Contains(":"))
+            string[] words = text.Split(':');
+
+            if (words.Length>1 && words[0]==ID)
             {
-                if (msg.StartsWith("ready:"))
+
+                string message = words[1];
+
+                if (message.Equals("ready"))
                 {
-                    setTime( "- -:- -.-");
                     STATE = "IDLE";
-                }
-                if (msg.StartsWith("idle:"))
-                {
-                    //setTime("- -:- -.-");
-                    string w = msg.Split(':')[1];
+
+                    setTime( "- -:- -.--");
                     
-                    setWeight(Convert.ToInt32(w));
                 }
-                if (msg.StartsWith("armed:"))
+
+                if (message.Equals("idle"))
                 {
-                    setTime( "00:00.0");
+                   
+
+                    //string w = msg.Split(':')[1];
+                    setWeight(Convert.ToInt32(words[2]));
+
+                    
+                }
+                if (message.Equals("armed"))
+                {
+
+                    
                     STATE = "ARMED";
 
+                    setTime("00:00.00", Color.Red);
                     beep.BeginInvoke((a) => { beep.EndInvoke(a); }, null);
 
+                    
                 }
-                else if (msg.StartsWith("start:"))
+                else if (message.Equals("start"))
                 {
-
-                    setTime( "00:00.0");
-                    T = new DateTime(0);
+                    t1 = DateTime.Now;
                     STATE = "RUNNING";
+
+                    setTime( "00:00.00", Color.Red);
+                    
+                    
                 }
-                else if (msg.StartsWith("end:"))
+                else if (message.Equals("stop") && STATE=="RUNNING")
                 {
+                   
                     STATE = "IDLE";
-                    string ms = msg.Split(':')[1];
-                    setTime( new DateTime(Convert.ToInt64(ms) * 10000L), Color.Violet);
+                    Console.WriteLine("Time of run<"+ words[2] + ">");
+                    long ms = 0;
+                    long.TryParse(words[2], out ms);
+
+                    setTime(ms);
+                    setTimeColor(Color.Yellow);
                 }
             }
         }
 
+
+        private void broadcast(string message, int port)
+        {
+            using (var udpClient = new UdpClient())
+            {
+                message = ID + ":" + message;
+                var data = Encoding.UTF8.GetBytes(message);
+                udpClient.Send(data, data.Length, "192.168.1.255", port);
+            }
+        }
 
         private void broadcast(string text)
         {
-            using (var udpClient = new UdpClient(9999))
-            {
-                var data = Encoding.UTF8.GetBytes(text);
-                udpClient.Send(data, data.Length, "255.255.255.255", PORT);
-            }
+            broadcast(text, LOCAL_PORT);
         }
 
-        private void setTime( string txt)
+        private void setTime(string txt )
         {
-            setTime( txt, Color.Red);
+            //txt = DateTime.Now.ToString("ss:ff");
+            Label label = label1;
+            if (label.InvokeRequired)
+            {
+                label.Invoke(new Action(() => label.Text = txt));
+                return;
+            }
+            label.Text = txt;
         }
 
-        private void setTime(string txt, Color c )
+        private void setTime(string txt, Color c)
         {
             //txt = DateTime.Now.ToString("ss:ff");
             Label label = label1;
@@ -114,11 +149,27 @@ namespace Speed
             label.ForeColor = c;
         }
 
-        private void setTime(DateTime t, Color c)
-        {
-            setTime(t.ToString("mm:ss.f"), c );
+        private void setTime() {
+            long ticks = (long)((DateTime.Now - t1).TotalMilliseconds* 1e4);
+            setTime((new DateTime(ticks)).ToString("mm:ss.ff"));
         }
 
+        private void setTime(long ms)
+        {
+            long ticks = ms * 10000;
+            setTime((new DateTime(ticks)).ToString("mm:ss.ff"));
+        }
+
+        private void setTimeColor(Color c)
+        {
+            Label label = label1;
+            if (label.InvokeRequired)
+            {
+                label.Invoke(new Action(() => label.ForeColor = c));
+                return;
+            }
+            label.ForeColor = c;
+        }
 
         private void setWeight(int w)
         {
@@ -137,32 +188,51 @@ namespace Speed
 
         private void button1_Click(object sender, EventArgs e)
         {
-            broadcast("start:");
+
+            broadcast("start:0");
         }
         private void button2_Click(object sender, EventArgs e)
         {
-            broadcast("end:2345");
+            broadcast("stop:1234");
+            
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            broadcast("armed:");
+            broadcast("armed:0");
         }
         
-        private void button4_Click(object sender, EventArgs e)
-        {
-            broadcast("ready:");
-        }
 
         private void timer1_Tick(object sender, EventArgs e)
         {
             if (STATE == "RUNNING")
             {
+                setTime();
 
-                //Console.WriteLine(DateTime.Now.ToString("mm:ss.f"));
-                setTime(T.ToString("mm:ss.f"));
-                T = T.AddMilliseconds(timer1.Interval);
             }
+
+            if ((DateTime.Now - LastAliveFromScale).TotalSeconds > 10)
+            {
+                //setScaleReady(false);
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            Random r = new Random();
+
+            int w = r.Next(100);
+            broadcast("idle:"+w);
+        }
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            broadcast("ready:0");
 
         }
     }//end class

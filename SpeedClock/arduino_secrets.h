@@ -1,2 +1,5 @@
-#define SECRET_SSID "Vodafone-GECOSISTEMA"
-#define SECRET_PASS "gecosistema2001"
+#define ID "0"
+//#define SECRET_SSID "Casa"
+//#define SECRET_PASS "annaanna"
+#define SECRET_SSID "arcoasd"
+#define SECRET_PASS "12345678"

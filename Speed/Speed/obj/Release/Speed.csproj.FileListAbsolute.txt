@@ -6,3 +6,4 @@ D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.Properti
 D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.csproj.GenerateResource.Cache
 D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.exe
 D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.pdb
+D:\Users\vlr20\Projects\GitHub\speedclock\Speed\Speed\obj\Release\Speed.csprojResolveAssemblyReference.cache
