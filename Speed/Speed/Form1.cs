@@ -50,7 +50,7 @@ namespace Speed
         private void parseMessage(string text) {
 
             string[] words = text.Split(':');
-
+            Console.WriteLine(words[0]);
             if (words.Length>1 && words[0]==ID)
             {
 

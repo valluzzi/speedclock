@@ -33,7 +33,8 @@
 // HX711 -----------------------
 const int LOADCELL_DOUT_PIN = 4;
 const int LOADCELL_SCK_PIN  = 3;
-const int BUTTON_PIN = 2;   
+const int BUTTON_PIN = 2;
+#define ID "0" 
 
 
 HX711 scale;
@@ -73,8 +74,8 @@ state STATE;
 //------------ WiFI --------------------------------------------------------------------------
 int status = WL_IDLE_STATUS;
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = SECRET_SSID;        // your network SSID (name)
-char pass[] = SECRET_PASS;        // your network password (use for WPA, or use as key for WEP)
+char ssid[] = SECRET_SSID_1;        // your network SSID (name)
+char pass[] = SECRET_PASS_1;        // your network password (use for WPA, or use as key for WEP)
 unsigned int localPort  = 10999;      // local port to listen on
 unsigned int remotePort = 11000;      // remote display port
 char cmd[32]; //buffer command to broadcast  
@@ -93,9 +94,6 @@ void setup() {
   
   //Initialize serial and wait for port to open:
   Serial.begin(9600);
-  //while (!Serial) {
-  //  ; // wait for serial port to connect. Needed for native USB port only
-  //}
 
   // check for the presence of the shield:
   while (WiFi.status() == WL_NO_SHIELD) {
@@ -107,10 +105,12 @@ void setup() {
   while ( status != WL_CONNECTED) {
     print("Attempting to connect to SSID: ");
     println(ssid);
-    // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-    status = WiFi.begin(ssid, pass);
-
+    status = WiFi.begin(SECRET_SSID_1, SECRET_PASS_1);
+    if (status==4){
+      status = WiFi.begin(SECRET_SSID_2, SECRET_PASS_2);
+    }
     // wait 10 seconds for connection:
+    println("------------------------------------------------");
     delay(2000);
   }
   println("Connected to wifi");
@@ -139,7 +139,7 @@ void loop() {
 
       //weighting ~= 85ms
       LOOP_TIME = millis();
-      if (STATE!=RUNNING || (STATE==RUNNING && RUNNING_COUNTER%20==0)){
+      if (STATE!=RUNNING || (STATE==RUNNING && RUNNING_COUNTER%1000000==0)){
           while ( !scale.is_ready() ){
               yield();  
           }
@@ -185,6 +185,8 @@ void loop() {
           mills_in_this_state=0;
           sprintf(cmd,"%s:stop:0",ID);
           repeated_broadcast(cmd,2);
+          //broadcast(cmd);
+          //println(cmd);
       }
 
       //STOP RUNNING BY PRESSING BUTTON 
@@ -193,9 +195,16 @@ void loop() {
           STATE = IDLE;
           mills_in_this_state=0;
           sprintf(cmd,"%s:stop:%d",ID,(t1-t0));
-          repeated_broadcast(cmd,10);
+          repeated_broadcast(cmd,3);
+          //broadcast(cmd);
+          println(cmd);
       }
 
+      //TEST BUTTON
+      if (STATE!=RUNNING && digitalRead(BUTTON_PIN)){
+        
+          println("STOP");
+      }
       
 
       LOOP_TIME = millis()-LOOP_TIME;
@@ -231,7 +240,7 @@ void repeated_broadcast(char* text, int n){
       Udp.write(text);
       Udp.endPacket();
       if (j>1){
-        delay(j*random(5,30));
+        delay(j*random(50,300));
       }
     }
 }
