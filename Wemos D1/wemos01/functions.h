@@ -25,6 +25,8 @@
 #include <ESP8266WiFi.h> //ESP8266
 #include <WiFiUdp.h>
 
+#define PACKET_SIZE 32
+
 #define ID 0  //foot-board id 0,1,2,...
 #define localPort 10999      // local port to listen on
 #define remotePort 11000     // remote display port
@@ -42,26 +44,30 @@ unsigned long te;  //timestamp of end
 WiFiUDP Udp;
 const IPAddress broadcastIp(255,255,255,255);
 
-
+/**
+ * printWiFiStatus
+ */
 void printWiFiStatus() {
-  // print the SSID of the network you're attached to:
-  Serial.print("SSID: ");
-  Serial.println(WiFi.SSID());
-
-  // print your WiFi shield's IP address:
-  IPAddress ip = WiFi.localIP();
-  Serial.print("IP Address: ");
-  Serial.println(ip);
-
-  // print the received signal strength:
-  long rssi = WiFi.RSSI();
-  Serial.print("signal strength (RSSI):");
-  Serial.print(rssi);
-  Serial.println(" dBm");
+  if (DEBUG){
+    // print the SSID of the network you're attached to:
+    Serial.print("SSID: ");
+    Serial.println(WiFi.SSID());
+  
+    // print your WiFi shield's IP address:
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address: ");
+    Serial.println(ip);
+  
+    // print the received signal strength:
+    long rssi = WiFi.RSSI();
+    Serial.print("signal strength (RSSI):");
+    Serial.print(rssi);
+    Serial.println(" dBm");
+  }
 }
 
 /**
- * WiFISetup - connect to a WiFi Networka and 
+ * WiFISetup - connect to a WiFi Networka and prepare UDP port
  */
 void WiFiSetup(){
 
@@ -93,7 +99,7 @@ void WiFiSetup(){
 
 
 
-char packet[32]; //buffer to broadcast  
+char packet[PACKET_SIZE]; //buffer to broadcast  
 unsigned long mills_in_this_state=0;
 unsigned long LOOP_TIME;
 

@@ -43,18 +43,17 @@ bool isStopButtonPressed = false;
 
 void setup() {
 
+  changeStateTo(BEGIN);
+
   // initialize the button pin as a input:
   pinMode(START_BUTTON, INPUT_PULLUP);
   pinMode(STOP_BUTTON,  INPUT_PULLUP);
   
-  //Initialize serial and wait for port to open:
+  //Initialize serial:
   Serial.begin(115200);
 
   WiFiSetup();
   
-
-  changeStateTo(BEGIN);
-
   changeStateTo(IDLE);
 
 }
@@ -64,6 +63,19 @@ void loop() {
       LOOP_TIME = millis();
       isFootBoardPressed  = (digitalRead(START_BUTTON)==LOW);
       isStopButtonPressed = (digitalRead(STOP_BUTTON) ==LOW);
+
+      int n = Udp.parsePacket();
+      if (n){
+          Udp.read(packet,PACKET_SIZE);
+          String id = String(packet[0]);
+          if (id.toInt() == ID ){
+               //We receive a packet
+               //may be a reset command
+               changeStateTo(IDLE);
+          }
+        
+      }//udp receive
+
 
       //If footbar is pressed goto PREARMED
       if (STATE==IDLE && isFootBoardPressed){
