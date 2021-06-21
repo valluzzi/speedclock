@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">SpeedClimb</string>
+    <string name="_45">45</string>
+    <string name="kg">--</string>
+    <string name="not_ready">NOT READY</string>
+    <string name="button">Stop</string>
+</resources>
