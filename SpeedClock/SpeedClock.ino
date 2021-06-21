@@ -40,14 +40,17 @@ const int BUTTON_PIN = 2;
 HX711 scale;
 long tare; 
 long weight=0;
-long THRESHOLD_WEIGHT = 10;  //20kg
-long ALPHA = 9300;  //conversion factor for scale into kg.
-const int DEBUG = 1;
+long max_weight = 0;
+const unsigned long THRESHOLD_WEIGHT = 15;  //15Kg
+const unsigned long ALPHA = 5200;  //conversion factor for scale into kg.
+const unsigned long WEIGHTING_INTERVAL = 250000;
+const int DEBUG = 0;
 //------------------------------
 unsigned long t0;
 unsigned long t1;
 unsigned long LOOP_TIME;
 unsigned long RUNNING_COUNTER;
+
 unsigned long mills_in_this_state =0;
 
 
@@ -79,6 +82,7 @@ char pass[] = SECRET_PASS_1;        // your network password (use for WPA, or us
 unsigned int localPort  = 10999;      // local port to listen on
 unsigned int remotePort = 11000;      // remote display port
 char cmd[32]; //buffer command to broadcast  
+char packetBuffer[255]; //buffer to hold incoming packet
 
 WiFiUDP Udp;
 //WiFiServer wifiServer(80);
@@ -116,9 +120,7 @@ void setup() {
   println("Connected to wifi");
   printWiFiStatus();
 
-  //Setup a TCP SERVER
-  //wifiServer.begin();
-  
+ 
 
   println("\nStarting connection to server...");
   // if you get a connection, report back via serial:
@@ -130,7 +132,7 @@ void setup() {
   changeStateTo(CALIBRATING);
   print("tara= ");
   tare = taring();
-  println(tare);
+  //println(tare);
   changeStateTo(IDLE);
 
 }
@@ -139,21 +141,27 @@ void loop() {
 
       //weighting ~= 85ms
       LOOP_TIME = millis();
-      if (STATE!=RUNNING || (STATE==RUNNING && RUNNING_COUNTER%1000000==0)){
+      if (STATE!=RUNNING || (STATE==RUNNING && RUNNING_COUNTER%WEIGHTING_INTERVAL==0)){
           while ( !scale.is_ready() ){
-              yield();  
+              delay(1);  
           }
-          weight = (scale.read()-tare) / ALPHA;
+          weight = abs(scale.read()-tare) / ALPHA;
+          weight = (weight>200)?0:weight;  //caseof crazy values
+          max_weight = max(weight,max_weight);
           RUNNING_COUNTER=0;
+          
+          if (weight>2){
+            print(weight);print("  ");println(max_weight);
+          }
       }
       RUNNING_COUNTER++;
 
       //Periodically broadcast a i_m_alive message
-      if (STATE==IDLE && mills_in_this_state>=2500){
+      if (STATE == IDLE && mills_in_this_state>=2500){
           changeStateTo(IDLE);
       }
       
-      //PRE-ARMED!!! 
+      //PRE-ARMED!!! transient state for 500ms before becaming ARMED or falling back in IDLE
       if (STATE == IDLE && weight>=THRESHOLD_WEIGHT){
           changeStateTo(PREARMED);
       }
@@ -168,10 +176,12 @@ void loop() {
           changeStateTo(IDLE);
       }
 
-      //START ---> RUNNING
-      if (STATE == ARMED && weight<(THRESHOLD_WEIGHT/2)){
+      //START ---> RUNNING.................................
+      if (STATE == ARMED && weight<max_weight/2 && max_weight>0){
           t0 = millis();
           changeStateTo(RUNNING);
+          weight=0;
+          max_weight=0;
       }
 
       //Periodically broadcast a i_m_alive message
@@ -180,11 +190,12 @@ void loop() {
       } 
 
       //BREAK RUNNING STATE BY GETTING ON THE PLATFORM 
-      if (STATE==RUNNING && weight>=(THRESHOLD_WEIGHT/2)){
+      if (STATE==RUNNING && weight>=THRESHOLD_WEIGHT){
           STATE = IDLE;
           mills_in_this_state=0;
           sprintf(cmd,"%s:stop:0",ID);
-          repeated_broadcast(cmd,2);
+          repeated_broadcast(cmd,3);
+          println(cmd);
           //broadcast(cmd);
           //println(cmd);
       }
@@ -197,16 +208,20 @@ void loop() {
           sprintf(cmd,"%s:stop:%d",ID,(t1-t0));
           repeated_broadcast(cmd,3);
           //broadcast(cmd);
-          println(cmd);
+          max_weight=0;
       }
 
-      //TEST BUTTON
-      if (STATE!=RUNNING && digitalRead(BUTTON_PIN)){
-        
-          println("STOP");
+      //UDP RECEIVE
+      if (true){
+          int packetSize = Udp.parsePacket();
+          if (packetSize){
+              int len = Udp.read(packetBuffer, 255);
+              if (len > 0) {packetBuffer[len] = 0;}
+              if (strstr(packetBuffer,":stop:")){
+                changeStateTo(IDLE);
+              }
+          }
       }
-      
-
       LOOP_TIME = millis()-LOOP_TIME;
       mills_in_this_state+=LOOP_TIME;
 }//loop
@@ -264,7 +279,7 @@ void changeStateTo(state s){
         sprintf(cmd,"%s:prearmed:0",ID);
         break;
       case ARMED:
-        sprintf(cmd,"%s:armed:0",ID);
+        sprintf(cmd,"%s:armed:0",ID);     
         break;
       case RUNNING:
         sprintf(cmd,"%s:start:0",ID);
@@ -275,6 +290,7 @@ void changeStateTo(state s){
     }
     
     broadcast(cmd);
+    println(cmd);
 }
 
 void print(const char* text){
@@ -318,7 +334,7 @@ void printWiFiStatus() {
   // print your WiFi shield's IP address:
   IPAddress ip = WiFi.localIP();
   print("IP Address: ");
-  Serial.println(ip);
+  if (DEBUG) Serial.println(ip);
 
   // print the received signal strength:
   long rssi = WiFi.RSSI();
