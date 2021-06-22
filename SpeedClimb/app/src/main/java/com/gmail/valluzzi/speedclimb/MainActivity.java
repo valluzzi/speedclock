@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         timer1.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if ( (STATE!=state.RUNNING) && SECONDS_FROM_LAST_MESSAGE>10) {
+                if ( SECONDS_FROM_LAST_MESSAGE>10) {
 
                     STATE = state.DISCONNECTED;
                     clock.setTextColor(Color.GRAY);
