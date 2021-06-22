@@ -30,17 +30,6 @@ public class MainActivity extends AppCompatActivity {
 
     private static String ID;
 
-    private enum state{
-        BEGIN,
-        IDLE,
-        PREARMED,
-        ARMED,
-        RUNNING,
-        STOP,
-        DISCONNECTED
-    };
-
-    private static state STATE=state.DISCONNECTED;
     private static final String TAG  = "SpeedClimb";
     private static final int LOCAL_PORT  = 11000;
     private static final int REMOTE_PORT = 10999;
@@ -88,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 if ( SECONDS_FROM_LAST_MESSAGE>10) {
 
-                    STATE = state.DISCONNECTED;
+                    //DISCONNECTED;
                     clock.setTextColor(Color.GRAY);
                     status.setTextColor(Color.GRAY);
                     status.setText("NOT CONNECTED...");
@@ -244,15 +233,12 @@ public class MainActivity extends AppCompatActivity {
 
                 if (message.equals("IDLE")) {
 
-                    STATE = state.IDLE;
                     clock.stop();
                     clock.setTextColor(Color.YELLOW);
                     status.setTextColor(Color.YELLOW);
-                    status.setText("IDLE...");
+                    status.setText("CONNECTED...");
 
                 }else if (message.equals("PREARMED")) {
-
-                    STATE=state.PREARMED;
 
                     clock.stop();
                     clock.reset();
@@ -261,8 +247,6 @@ public class MainActivity extends AppCompatActivity {
                     status.setText("GET READY...");
                 }
                 else if (message.equals("ARMED")) {
-
-                    STATE=state.ARMED;
 
                     clock.stop();
                     clock.reset();
@@ -273,8 +257,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 else if (message.equals("RUNNING")) {
 
-                    STATE=state.RUNNING;
-
                     if (words.length > 2) {
                         long ms = Long.parseLong(words[2]);
                         clock.start(ms);
@@ -283,12 +265,11 @@ public class MainActivity extends AppCompatActivity {
                     }
                     clock.setTextColor(Color.RED);
                     status.setTextColor(Color.RED);
-                    status.setText("RUNNING...");
+                    status.setText("CLIMBING...");
 
                     //BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
                 }
                 else if (message.equals("STOP")) {
-                    STATE=state.STOP;
 
                     clock.stop();
                     if (words.length > 2) {
