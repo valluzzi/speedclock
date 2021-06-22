@@ -28,11 +28,7 @@ import static com.gmail.valluzzi.speedclimb.Utils.sleep;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static String ID;
 
-    private static final String TAG  = "SpeedClimb";
-    private static final int LOCAL_PORT  = 11000;
-    private static final int REMOTE_PORT = 10999;
     private static final int MAX_UDP_DATAGRAM_LEN = 64;
     private static Chronometer clock;
     private static TextView status;
@@ -48,8 +44,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         //Get saved Settings
-        SharedPreferences settings = getSharedPreferences("SETTINGS", MODE_PRIVATE);
-        ID = settings.getString("ID", "0");
+        //SharedPreferences settings = getSharedPreferences("SETTINGS", MODE_PRIVATE);
+        //ID = settings.getString("ID", "0");
 
         //Avoid the title bar and FULL SCREEN mode
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -66,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
         reset.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                sendPacket("stop:0");
+                Utils.sendPacket("stop:0");
                 status.setText("STOP!");
             }
         });
@@ -93,49 +89,6 @@ public class MainActivity extends AppCompatActivity {
         StrictMode.setThreadPolicy(policy);
     }
 
-    public void sendPacket(String message){
-        try {
-            //Open a random port to send the package
-            //add ID to the message string
-            message = ID+":"+message;
-
-            InetAddress address = InetAddress.getByName("255.255.255.255");
-            DatagramSocket socket = new DatagramSocket();
-            socket.setBroadcast(true);
-            byte[] sendData = message.getBytes();
-            DatagramPacket packet = new DatagramPacket(sendData, sendData.length, address, REMOTE_PORT);
-            socket.send(packet);
-
-        } catch (IOException e) {
-            Log.e(TAG, "IOException: " + e.getMessage());
-        }
-    }
-
-
-    public void broadcast(String message, int times) {
-        try {
-            //Open a random port to send the package
-            //add ID to the message string
-            message = ID+":"+message;
-
-            InetAddress address = InetAddress.getByName("255.255.255.255");
-            DatagramSocket socket = new DatagramSocket();
-            socket.setBroadcast(true);
-            byte[] sendData = message.getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length,address, LOCAL_PORT);
-            for(int j=1;j<=times;j++) {
-                socket.send(sendPacket);
-                if (j>1)sleep(j*10);
-            }
-
-        } catch (IOException e) {
-            Log.e(TAG, "IOException: " + e.getMessage());
-        }
-    }
-
-    public void broadcast(String message) {
-        broadcast(message,1);
-    }
 
     private DatagramReceiver receiver = null;
 
@@ -152,14 +105,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void onPause() {
-        Log.e(TAG, "onPause:");
+        Log.e(Utils.TAG, "onPause:");
         if (receiver !=null) {
             receiver.kill();
         }
         super.onPause();
     }
-
-
 
     private class DatagramReceiver extends Thread {
         private boolean running = true;
@@ -181,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
             DatagramSocket socket = null;
             try {
 
-                socket= new DatagramSocket(LOCAL_PORT);
+                socket= new DatagramSocket(Utils.LOCAL_PORT);
                 socket.setTrafficClass( 0x04 ); //IPTOS_RELIABILITY
 
                 while(running) {
@@ -193,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Throwable e) {
 
-                Log.e(TAG,"Throwable Exception:"+e);
+                Log.e(Utils.TAG,"Throwable Exception:"+e);
 
             }
             if (socket != null) {
@@ -205,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
         public void kill() {
             running = false;
             //!important --> to unlock socket.receive() send it anything
-            broadcast("kill thread");
+            Utils.broadcast("kill thread");
         }
 
 
@@ -223,13 +174,13 @@ public class MainActivity extends AppCompatActivity {
             SECONDS_FROM_LAST_MESSAGE =0;
 
             String[] words = receiver.lastMessage.split(":");
-            if (words.length>1 && words[0].equals( ID ) ) {
+            if (words.length>1 && words[0].equals( ""+Utils.ID ) ) {  // ID ==> CurrentID
                 String message = words[1];
                 if (message.startsWith("kill")){
                     return;
                 }
 
-                Log.e(TAG,message);
+                Log.e(Utils.TAG,message);
 
                 if (message.equals("IDLE")) {
 
