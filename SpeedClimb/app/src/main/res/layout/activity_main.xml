@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinatorLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/background_dark"
+    tools:context=".MainActivity">
+
+    <com.gmail.valluzzi.speedclimb.Chronometer
+        android:id="@+id/editText"
+        android:layout_width="637dp"
+        android:layout_height="302dp"
+        android:ems="10"
+        android:focusableInTouchMode="false"
+        android:format="%sss"
+        android:inputType="time"
+        android:singleLine="true"
+        android:text="@string/_45"
+        android:textAllCaps="false"
+        android:textColor="@android:color/darker_gray"
+        android:textSize="220sp"
+        app:fontFamily="sans-serif-condensed-light"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="1dp" />
+
+    <TextView
+        android:id="@+id/weight"
+        android:layout_width="455dp"
+        android:layout_height="56dp"
+        android:gravity="right"
+        android:text="@string/not_ready"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textColor="#ABABAB"
+        android:textSize="40sp"
+        app:fontFamily="sans-serif-condensed-light"
+        app:layout_constraintEnd_toEndOf="@+id/editText"
+        app:layout_constraintTop_toBottomOf="@+id/editText" />
+
+    <Button
+        android:id="@+id/stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:text="@string/button"
+        app:layout_constraintEnd_toStartOf="@+id/weight"
+        app:layout_constraintTop_toBottomOf="@+id/editText" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
