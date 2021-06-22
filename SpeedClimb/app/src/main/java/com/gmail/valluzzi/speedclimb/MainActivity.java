@@ -31,10 +31,12 @@ public class MainActivity extends AppCompatActivity {
     private static String ID;
 
     private enum state{
-
+        BEGIN,
         IDLE,
+        PREARMED,
         ARMED,
         RUNNING,
+        STOP,
         DISCONNECTED
     };
 
@@ -240,25 +242,25 @@ public class MainActivity extends AppCompatActivity {
 
                 Log.e(TAG,message);
 
-                if (message.equals("ready")) {
+                if (message.equals("IDLE")) {
 
                     STATE = state.IDLE;
                     clock.stop();
                     clock.setTextColor(Color.YELLOW);
                     status.setTextColor(Color.YELLOW);
-                    status.setText("" + words[2] + " kg");
+                    status.setText("IDLE...");
 
-                }else if (message.equals("calibrating")) {
+                }else if (message.equals("PREARMED")) {
 
                     STATE=state.IDLE;
 
                     clock.stop();
                     clock.reset();
-                    clock.setTextColor(Color.GRAY);
-                    status.setTextColor(Color.GRAY);
-                    status.setText("WAIT...");
+                    clock.setTextColor(Color.MAGENTA);
+                    status.setTextColor(Color.MAGENTA);
+                    status.setText("GET READY...");
                 }
-                else if (message.equals("armed")) {
+                else if (message.equals("ARMED")) {
 
                     STATE=state.ARMED;
 
@@ -269,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
                     status.setText("READY");
                     BEEPER.startTone(ToneGenerator.TONE_CDMA_PIP,150);
                 }
-                else if (message.equals("start")) {
+                else if (message.equals("RUNNING")) {
 
                     STATE=state.RUNNING;
 
@@ -282,10 +284,10 @@ public class MainActivity extends AppCompatActivity {
                     clock.setTextColor(Color.RED);
                     status.setTextColor(Color.RED);
                     status.setText("RUNNING...");
-                    //BEEPER.startTone(ToneGenerator.TONE_SUP_RADIO_ACK,600);
-                    BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
+
+                    //BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
                 }
-                else if (message.equals("stop")) {
+                else if (message.equals("STOP")) {
                     STATE=state.IDLE;
 
                     clock.stop();
