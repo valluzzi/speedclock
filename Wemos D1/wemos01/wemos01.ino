@@ -64,18 +64,21 @@ void loop() {
       isFootBoardPressed  = (digitalRead(START_BUTTON)==LOW);
       isStopButtonPressed = (digitalRead(STOP_BUTTON) ==LOW);
 
-      int n = Udp.parsePacket();
-      if (n){
-          Udp.read(packet,PACKET_SIZE);
-          String id = String(packet[0]);
-          if (id.toInt() == ID ){
-               //We receive a packet
-               //may be a reset command
-               changeStateTo(IDLE);
-          }
-        
-      }//udp receive
-
+      // Check for a packet received one time each second ------------------
+      if (mills_in_this_state%1000==0){
+          int n = Udp.parsePacket();
+          if (n){
+              Udp.read(packet,PACKET_SIZE);
+              String id = String(packet[0]);
+              if (id.toInt() == ID ){
+                   //We receive a packet
+                   //may be a reset command
+                   changeStateTo(IDLE);
+              }
+            
+          }//udp receive
+      }
+      //-------------------------------------------------------------------
 
       //If footbar is pressed goto PREARMED
       if (STATE==IDLE && isFootBoardPressed){
