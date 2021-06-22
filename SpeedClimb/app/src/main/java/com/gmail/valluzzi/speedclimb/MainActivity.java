@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                     STATE = state.DISCONNECTED;
                     clock.setTextColor(Color.GRAY);
                     status.setTextColor(Color.GRAY);
-                    status.setText("NOT READY");
+                    status.setText("NOT CONNECTED...");
                 }
 
                 SECONDS_FROM_LAST_MESSAGE+=5;
@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
 
                 }else if (message.equals("PREARMED")) {
 
-                    STATE=state.IDLE;
+                    STATE=state.PREARMED;
 
                     clock.stop();
                     clock.reset();
@@ -288,7 +288,7 @@ public class MainActivity extends AppCompatActivity {
                     //BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
                 }
                 else if (message.equals("STOP")) {
-                    STATE=state.IDLE;
+                    STATE=state.STOP;
 
                     clock.stop();
                     if (words.length > 2) {
