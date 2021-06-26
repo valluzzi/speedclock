@@ -231,7 +231,7 @@ public class MainActivity extends AppCompatActivity {
                     status.setTextColor(Color.YELLOW);
                     status.setText("STOPPED");
 
-                    BEEPER.startTone(ToneGenerator.	TONE_CDMA_ONE_MIN_BEEP,200);
+                    //BEEPER.startTone(ToneGenerator.	TONE_CDMA_ONE_MIN_BEEP,200);
                 }else{
 
                     //Se ricevi un qualunque messaggio significa che sei connesso
