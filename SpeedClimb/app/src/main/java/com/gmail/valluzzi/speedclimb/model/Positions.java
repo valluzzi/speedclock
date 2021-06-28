@@ -1,11 +1,28 @@
 package com.gmail.valluzzi.speedclimb.model;
 
-public class Position {
-    private final int ID;
+import java.util.LinkedList;
+import java.util.List;
 
-    public Position(int ID) {
-        this.ID = ID;
+public class Positions {
+    private List<Integer> positions;
+    private int currentPosition;
+
+    public Positions() {
+        this.positions = new LinkedList<Integer>();
+        currentPosition = 1;
     }
 
-    public int getID() {return this.ID;}
+    public void addPosition(int ID) {
+        if(!positions.contains(ID))
+            this.positions.add(ID);
+    }
+
+    public int getNextID() {
+        currentPosition = ++currentPosition % positions.size();
+        return positions.get(currentPosition);
+    }
+
+    public int getNrOfPositions() {
+        return positions.size();
+    }
 }

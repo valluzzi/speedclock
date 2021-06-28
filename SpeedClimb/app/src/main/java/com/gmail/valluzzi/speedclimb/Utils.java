@@ -3,6 +3,8 @@ package com.gmail.valluzzi.speedclimb;
 
 import android.util.Log;
 
+import com.gmail.valluzzi.speedclimb.model.Positions;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -16,7 +18,9 @@ public class Utils {
 
     public static final String TAG = "SpeedClimb";
 
-    public static final int ID = 0;
+    private static int ID = -1;
+
+    private static Positions positions;
 
     public static void sleep(int mills)
     {
@@ -65,6 +69,28 @@ public class Utils {
 
     public static void broadcast(String message) {
         broadcast(message,1);
+    }
+
+    public static int getID() {
+        return ID;
+    }
+
+    public static void nextID() {
+        ID = positions.getNextID();
+    }
+
+    public static void addNewPosition(int newPosition) {
+
+        if(positions == null)
+           positions  = new Positions();
+
+        positions.addPosition(newPosition);
+        if(ID == -1)
+            ID = newPosition;
+    }
+
+    public static int getNrOfPositions() {
+        return positions.getNrOfPositions();
     }
 }//end class
 
