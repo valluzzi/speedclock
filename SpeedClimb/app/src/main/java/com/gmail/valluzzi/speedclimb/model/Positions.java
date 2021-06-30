@@ -18,8 +18,13 @@ public class Positions {
     }
 
     public int getNextID() {
-        currentPosition = ++currentPosition % positions.size();
-        return positions.get(currentPosition);
+        if (positions.size() > 0) {
+            currentPosition = ++currentPosition % positions.size();
+            return positions.get(currentPosition);
+        } else {
+            return -1;
+        }
+
     }
 
     public int getNrOfPositions() {
