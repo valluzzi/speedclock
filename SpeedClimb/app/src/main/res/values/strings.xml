@@ -5,4 +5,5 @@
     <string name="not_ready">NOT READY</string>
     <string name="button">Stop</string>
     <string name="arrow_down">Swipe Up</string>
+    <string name="footboard">FOOTBOARD</string>
 </resources>

@@ -75,8 +75,16 @@ public class Utils {
         return ID;
     }
 
+    public static String getPositionName() {
+        if(ID > -1)
+            return " " + String.valueOf(ID) + " ";
+        else
+            return " ";
+    }
+
     public static void nextID() {
-        ID = positions.getNextID();
+        if (positions != null)
+            ID = positions.getNextID();
     }
 
     public static void addNewPosition(int newPosition) {

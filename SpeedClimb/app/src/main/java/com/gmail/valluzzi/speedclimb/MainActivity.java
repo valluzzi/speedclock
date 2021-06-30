@@ -24,6 +24,7 @@ import android.widget.TextView;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Date;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -32,29 +33,109 @@ public class MainActivity extends AppCompatActivity {
     private static final int MAX_UDP_DATAGRAM_LEN = 64;
     private static Chronometer clock;
     private static TextView status;
-    private static Button reset;
     private static ImageView arrowDown;
     private static ProgressBar loadPosition;
     private static DatagramSocket socket = null;
     private static Timer timer1 = new Timer();
     private static long SECONDS_FROM_LAST_MESSAGE = 0;
-    private GestureDetector gestureDetector;
-
     private static ToneGenerator BEEPER = new ToneGenerator(AudioManager.STREAM_MUSIC, ToneGenerator.MAX_VOLUME);
+    private GestureDetector gestureDetector;
+    private DatagramReceiver receiver = null;
+    /**
+     *
+     *  parseMessage - core logic
+     *
+     *
+     */
+    private Runnable parseMessage = new Runnable() {
+        public void run() {
+            if (receiver == null) return;
+            SECONDS_FROM_LAST_MESSAGE =0;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    loadPosition.setVisibility(View.GONE);
+                }
+            });
 
-    private class GestureListener
-            extends GestureDetector.SimpleOnGestureListener {
+            String[] words = receiver.lastMessage.split(":");
+            if (words.length>1 && words[0].equals( ""+Utils.getID() ) ) {  // ID ==> CurrentID
+                String message = words[1];
+                if (message.startsWith("kill")){
+                    return;
+                }
 
-        private static final String GEST_TAG = "FlingGesture";
+                Log.e(Utils.TAG,message);
 
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            Utils.nextID();
-            Log.d(GEST_TAG, "Fling..."+Utils.getID());
-            loadPosition.setVisibility(View.VISIBLE);
-            return super.onFling(e1, e2, velocityX, velocityY);
-        }
-    }
+                if (message.equals("IDLE")) {
+
+                    clock.stop();
+                    clock.setTextColor(Color.YELLOW);
+                    status.setTextColor(Color.YELLOW);
+                    status.setText(getResources().getString(R.string.footboard)+
+                            Utils.getPositionName()+"CONNECTED...");
+
+                }else if (message.equals("PREARMED")) {
+
+                    clock.stop();
+                    clock.reset();
+                    clock.setTextColor(Color.MAGENTA);
+                    status.setTextColor(Color.MAGENTA);
+                    status.setText(getResources().getString(R.string.footboard)+
+                            Utils.getPositionName()+"GET READY...");
+                }
+                else if (message.equals("ARMED")) {
+
+                    clock.stop();
+                    clock.reset();
+                    clock.setTextColor(Color.RED);
+                    status.setTextColor(Color.RED);
+                    status.setText(getResources().getString(R.string.footboard)+
+                            Utils.getPositionName()+"READY");
+                    BEEPER.startTone(ToneGenerator.TONE_CDMA_PIP,150);
+                }
+                else if (message.equals("RUNNING")) {
+
+                    if (words.length > 2) {
+                        long ms = Long.parseLong(words[2]);
+                        clock.start(ms);
+                    } else {
+                        clock.start();
+                    }
+                    clock.setTextColor(Color.RED);
+                    status.setTextColor(Color.RED);
+                    status.setText(getResources().getString(R.string.footboard)+
+                            Utils.getPositionName()+"CLIMBING...");
+
+                    //BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
+                }
+                else if (message.equals("STOP")) {
+
+                    clock.stop();
+                    if (words.length > 2) {
+                        long ms = Long.parseLong(words[2]);
+                        clock.setText(ms);
+                    }
+                    clock.setTextColor(Color.YELLOW);
+                    status.setTextColor(Color.YELLOW);
+                    status.setText(getResources().getString(R.string.footboard)+
+                            Utils.getPositionName()+"STOPPED");
+
+                    //BEEPER.startTone(ToneGenerator.	TONE_CDMA_ONE_MIN_BEEP,200);
+                }else{
+
+                    //Se ricevi un qualunque messaggio significa che sei connesso
+
+                }
+
+            } else {
+                Utils.addNewPosition(Integer.valueOf(words[0]));
+
+                if (Utils.getNrOfPositions() > 1)
+                    arrowDown.setVisibility(View.VISIBLE);
+            }
+        }//end run
+    };//end Runnable
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,16 +157,10 @@ public class MainActivity extends AppCompatActivity {
         arrowDown = this.findViewById(R.id.arrowDown);
         loadPosition = this.findViewById(R.id.loadPosition);
 
+        arrowDown.setVisibility(View.GONE);
+
         loadPosition.animate();
 
-        reset = this.findViewById(R.id.stop);
-        reset.setOnClickListener( new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Utils.sendPacket("stop:0");
-                status.setText("Position "+Utils.getID()+" STOP!");
-            }
-        });
 
         //IDLE TIMER
         timer1.scheduleAtFixedRate(new TimerTask() {
@@ -103,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
                     //DISCONNECTED;
                     clock.setTextColor(Color.GRAY);
                     status.setTextColor(Color.GRAY);
-                    status.setText("Position "+Utils.getID()+" NOT CONNECTED...");
+                    status.setText(getResources().getString(R.string.footboard)+Utils.getPositionName()+"NOT CONNECTED...");
                 }
 
                 SECONDS_FROM_LAST_MESSAGE+=5;
@@ -118,12 +193,9 @@ public class MainActivity extends AppCompatActivity {
         gestureDetector = new GestureDetector(this, new GestureListener());
 
         FlingAnimation fling = new FlingAnimation(findViewById(android.R.id.content).getRootView(),
-                DynamicAnimation.SCROLL_X);
+                DynamicAnimation.SCROLL_Y);
 
     }
-
-
-    private DatagramReceiver receiver = null;
 
     protected void onResume() {
         super.onResume();
@@ -151,9 +223,25 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
     }
 
+    private class GestureListener
+            extends GestureDetector.SimpleOnGestureListener {
+
+        private static final String GEST_TAG = "FlingGesture";
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2,
+                               float velocityX, float velocityY) {
+            if (Utils.getID() > -1) {
+                Utils.nextID();
+                loadPosition.setVisibility(View.VISIBLE);
+            }
+            return super.onFling(e1, e2, velocityX, velocityY);
+        }
+    }
+
     private class DatagramReceiver extends Thread {
-        private boolean running = true;
         public String lastMessage= "";
+        private boolean running = true;
 
         public DatagramReceiver(){
             //Log.e(TAG,"new MyDatagramReceiver()");
@@ -200,97 +288,6 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
-
-    /**
-     *
-     *  parseMessage - core logic
-     *
-     *
-     */
-    private Runnable parseMessage = new Runnable() {
-        public void run() {
-            if (receiver == null) return;
-            SECONDS_FROM_LAST_MESSAGE =0;
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    loadPosition.setVisibility(View.GONE);
-                }
-            });
-
-            String[] words = receiver.lastMessage.split(":");
-            if (words.length>1 && words[0].equals( ""+Utils.getID() ) ) {  // ID ==> CurrentID
-                String message = words[1];
-                if (message.startsWith("kill")){
-                    return;
-                }
-
-                Log.e(Utils.TAG,message);
-
-                if (message.equals("IDLE")) {
-
-                    clock.stop();
-                    clock.setTextColor(Color.YELLOW);
-                    status.setTextColor(Color.YELLOW);
-                    status.setText("Position "+Utils.getID()+" CONNECTED...");
-
-                }else if (message.equals("PREARMED")) {
-
-                    clock.stop();
-                    clock.reset();
-                    clock.setTextColor(Color.MAGENTA);
-                    status.setTextColor(Color.MAGENTA);
-                    status.setText("Position "+Utils.getID()+" GET READY...");
-                }
-                else if (message.equals("ARMED")) {
-
-                    clock.stop();
-                    clock.reset();
-                    clock.setTextColor(Color.RED);
-                    status.setTextColor(Color.RED);
-                    status.setText("Position "+Utils.getID()+" READY");
-                    BEEPER.startTone(ToneGenerator.TONE_CDMA_PIP,150);
-                }
-                else if (message.equals("RUNNING")) {
-
-                    if (words.length > 2) {
-                        long ms = Long.parseLong(words[2]);
-                        clock.start(ms);
-                    } else {
-                        clock.start();
-                    }
-                    clock.setTextColor(Color.RED);
-                    status.setTextColor(Color.RED);
-                    status.setText("Position "+Utils.getID()+" CLIMBING...");
-
-                    //BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
-                }
-                else if (message.equals("STOP")) {
-
-                    clock.stop();
-                    if (words.length > 2) {
-                        long ms = Long.parseLong(words[2]);
-                        clock.setText(ms);
-                    }
-                    clock.setTextColor(Color.YELLOW);
-                    status.setTextColor(Color.YELLOW);
-                    status.setText("Position "+Utils.getID()+" STOPPED");
-
-                    //BEEPER.startTone(ToneGenerator.	TONE_CDMA_ONE_MIN_BEEP,200);
-                }else{
-
-                    //Se ricevi un qualunque messaggio significa che sei connesso
-
-                }
-
-            } else {
-                Utils.addNewPosition(Integer.valueOf(words[0]));
-
-                if (Utils.getNrOfPositions() > 1)
-                    arrowDown.setVisibility(View.VISIBLE);
-            }
-        }//end run
-    };//end Runnable
 
 
 }//end class
