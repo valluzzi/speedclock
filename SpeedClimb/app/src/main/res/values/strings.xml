@@ -4,4 +4,5 @@
     <string name="kg">--</string>
     <string name="not_ready">NOT READY</string>
     <string name="button">Stop</string>
+    <string name="arrow_down">Swipe Up</string>
 </resources>

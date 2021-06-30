@@ -1,43 +1,60 @@
 package com.gmail.valluzzi.speedclimb;
 
-import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.StrictMode;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.FlingAnimation;
+
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static com.gmail.valluzzi.speedclimb.Utils.sleep;
-
-
 public class MainActivity extends AppCompatActivity {
-
 
     private static final int MAX_UDP_DATAGRAM_LEN = 64;
     private static Chronometer clock;
     private static TextView status;
     private static Button reset;
+    private static ImageView arrowDown;
+    private static ProgressBar loadPosition;
     private static DatagramSocket socket = null;
     private static Timer timer1 = new Timer();
     private static long SECONDS_FROM_LAST_MESSAGE = 0;
+    private GestureDetector gestureDetector;
 
     private static ToneGenerator BEEPER = new ToneGenerator(AudioManager.STREAM_MUSIC, ToneGenerator.MAX_VOLUME);
+
+    private class GestureListener
+            extends GestureDetector.SimpleOnGestureListener {
+
+        private static final String GEST_TAG = "FlingGesture";
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            Utils.nextID();
+            Log.d(GEST_TAG, "Fling..."+Utils.getID());
+            loadPosition.setVisibility(View.VISIBLE);
+            return super.onFling(e1, e2, velocityX, velocityY);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +73,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         clock = this.findViewById(R.id.editText);
         status = this.findViewById(R.id.weight);
+        arrowDown = this.findViewById(R.id.arrowDown);
+        loadPosition = this.findViewById(R.id.loadPosition);
 
+        loadPosition.animate();
 
         reset = this.findViewById(R.id.stop);
         reset.setOnClickListener( new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Utils.sendPacket("stop:0");
-                status.setText("STOP!");
+                status.setText("Position "+Utils.getID()+" STOP!");
             }
         });
 
@@ -73,10 +93,17 @@ public class MainActivity extends AppCompatActivity {
             public void run() {
                 if ( SECONDS_FROM_LAST_MESSAGE>10) {
 
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            loadPosition.setVisibility(View.GONE);
+                        }
+                    });
+
                     //DISCONNECTED;
                     clock.setTextColor(Color.GRAY);
                     status.setTextColor(Color.GRAY);
-                    status.setText("NOT CONNECTED...");
+                    status.setText("Position "+Utils.getID()+" NOT CONNECTED...");
                 }
 
                 SECONDS_FROM_LAST_MESSAGE+=5;
@@ -87,6 +114,12 @@ public class MainActivity extends AppCompatActivity {
         // Hack Prevent crash (sending should be done using an async task)
         StrictMode.ThreadPolicy policy = new   StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
+
+        gestureDetector = new GestureDetector(this, new GestureListener());
+
+        FlingAnimation fling = new FlingAnimation(findViewById(android.R.id.content).getRootView(),
+                DynamicAnimation.SCROLL_X);
+
     }
 
 
@@ -102,6 +135,12 @@ public class MainActivity extends AppCompatActivity {
         if (receiver !=null && !receiver.isAlive()){
             receiver.start();
         }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        gestureDetector.onTouchEvent(event);
+        return super.onTouchEvent(event);
     }
 
     protected void onPause() {
@@ -172,9 +211,15 @@ public class MainActivity extends AppCompatActivity {
         public void run() {
             if (receiver == null) return;
             SECONDS_FROM_LAST_MESSAGE =0;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    loadPosition.setVisibility(View.GONE);
+                }
+            });
 
             String[] words = receiver.lastMessage.split(":");
-            if (words.length>1 && words[0].equals( ""+Utils.ID ) ) {  // ID ==> CurrentID
+            if (words.length>1 && words[0].equals( ""+Utils.getID() ) ) {  // ID ==> CurrentID
                 String message = words[1];
                 if (message.startsWith("kill")){
                     return;
@@ -187,7 +232,7 @@ public class MainActivity extends AppCompatActivity {
                     clock.stop();
                     clock.setTextColor(Color.YELLOW);
                     status.setTextColor(Color.YELLOW);
-                    status.setText("CONNECTED...");
+                    status.setText("Position "+Utils.getID()+" CONNECTED...");
 
                 }else if (message.equals("PREARMED")) {
 
@@ -195,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
                     clock.reset();
                     clock.setTextColor(Color.MAGENTA);
                     status.setTextColor(Color.MAGENTA);
-                    status.setText("GET READY...");
+                    status.setText("Position "+Utils.getID()+" GET READY...");
                 }
                 else if (message.equals("ARMED")) {
 
@@ -203,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                     clock.reset();
                     clock.setTextColor(Color.RED);
                     status.setTextColor(Color.RED);
-                    status.setText("READY");
+                    status.setText("Position "+Utils.getID()+" READY");
                     BEEPER.startTone(ToneGenerator.TONE_CDMA_PIP,150);
                 }
                 else if (message.equals("RUNNING")) {
@@ -216,7 +261,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     clock.setTextColor(Color.RED);
                     status.setTextColor(Color.RED);
-                    status.setText("CLIMBING...");
+                    status.setText("Position "+Utils.getID()+" CLIMBING...");
 
                     //BEEPER.startTone(ToneGenerator.	TONE_CDMA_PIP,400);
                 }
@@ -229,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     clock.setTextColor(Color.YELLOW);
                     status.setTextColor(Color.YELLOW);
-                    status.setText("STOPPED");
+                    status.setText("Position "+Utils.getID()+" STOPPED");
 
                     //BEEPER.startTone(ToneGenerator.	TONE_CDMA_ONE_MIN_BEEP,200);
                 }else{
@@ -238,9 +283,16 @@ public class MainActivity extends AppCompatActivity {
 
                 }
 
+            } else {
+                Utils.addNewPosition(Integer.valueOf(words[0]));
+
+                if (Utils.getNrOfPositions() > 1)
+                    arrowDown.setVisibility(View.VISIBLE);
             }
         }//end run
     };//end Runnable
+
+
 }//end class
 
 
