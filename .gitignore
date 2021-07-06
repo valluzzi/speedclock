@@ -1,3 +1,6 @@
-SpeedClock/arduino_secrets.h
-Speed/Speed/bin
-Speed/Speed/obj
+
+Speed/
+SpeedButton/
+SpeedClock/
+WeMos/
+.DS_Store
