@@ -1,5 +1,5 @@
 # speedclock
-Clock for speed climbing race
+Clock for speed climbing race https://en.wikipedia.org/wiki/Speed_climbing
 
 This project was born to create a cheap and DIY footbooard for speed climbing but It can be easily modified for other similar or unknown scopes. It is composed of hardware and software. The hardware ( the footboard ) is build over an ESP8266.
 We choose Wemos D1 mini v1 but in the future other devices like ESP32 will be covered.
