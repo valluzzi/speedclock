@@ -6,8 +6,6 @@ import android.media.AudioManager;
 import android.media.ToneGenerator;
 import android.os.StrictMode;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.dynamicanimation.animation.DynamicAnimation;
-import androidx.dynamicanimation.animation.FlingAnimation;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -24,14 +22,14 @@ import android.widget.TextView;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.util.Date;
-import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int MAX_UDP_DATAGRAM_LEN = 64;
+    private static final int MAX_UDP_DATAGRAM_LEN = 32;
     private static Chronometer clock;
+    private static Button button1;
     private static TextView status;
     private static ImageView arrowDown;
     private static ProgressBar loadPosition;
@@ -65,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                Log.e(Utils.TAG,message);
+                button1.setText(words[0]);
 
                 if (message.equals("IDLE")) {
 
@@ -92,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                     status.setTextColor(Color.RED);
                     status.setText(getResources().getString(R.string.footboard)+
                             Utils.getPositionName()+"READY");
-                    BEEPER.startTone(ToneGenerator.TONE_CDMA_PIP,150);
+                    //BEEPER.startTone(ToneGenerator.TONE_CDMA_PIP,150);
                 }
                 else if (message.equals("RUNNING")) {
 
@@ -131,8 +129,11 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 Utils.addNewPosition(Integer.valueOf(words[0]));
 
-                if (Utils.getNrOfPositions() > 1)
-                    arrowDown.setVisibility(View.VISIBLE);
+
+
+                //if (Utils.getNrOfPositions() > 1) {
+                //    arrowDown.setVisibility(View.VISIBLE);
+                //}
             }
         }//end run
     };//end Runnable
@@ -141,10 +142,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //Get saved Settings
-        //SharedPreferences settings = getSharedPreferences("SETTINGS", MODE_PRIVATE);
-        //ID = settings.getString("ID", "0");
-
         //Avoid the title bar and FULL SCREEN mode
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -152,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
         setContentView(R.layout.activity_main);
+
         clock = this.findViewById(R.id.editText);
         status = this.findViewById(R.id.weight);
         arrowDown = this.findViewById(R.id.arrowDown);
@@ -161,12 +159,19 @@ public class MainActivity extends AppCompatActivity {
 
         loadPosition.animate();
 
+        button1 = (Button) findViewById(R.id.button1);
+        button1.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                button1.setText(""+Utils.nextID());
+            }
+        });
+
 
         //IDLE TIMER
         timer1.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if ( SECONDS_FROM_LAST_MESSAGE>10) {
+                if ( SECONDS_FROM_LAST_MESSAGE>5) {
 
                     runOnUiThread(new Runnable() {
                         @Override
@@ -183,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 
                 SECONDS_FROM_LAST_MESSAGE+=5;
             }
-        }, new Date(), 5000);
+        }, new Date(), 10000);
 
 
         // Hack Prevent crash (sending should be done using an async task)
@@ -192,8 +197,8 @@ public class MainActivity extends AppCompatActivity {
 
         gestureDetector = new GestureDetector(this, new GestureListener());
 
-        FlingAnimation fling = new FlingAnimation(findViewById(android.R.id.content).getRootView(),
-                DynamicAnimation.SCROLL_Y);
+        //FlingAnimation fling = new FlingAnimation(findViewById(android.R.id.content).getRootView(),
+        //        DynamicAnimation.SCROLL_Y);
 
     }
 
@@ -226,16 +231,21 @@ public class MainActivity extends AppCompatActivity {
     private class GestureListener
             extends GestureDetector.SimpleOnGestureListener {
 
-        private static final String GEST_TAG = "FlingGesture";
-
         @Override
         public boolean onFling(MotionEvent e1, MotionEvent e2,
                                float velocityX, float velocityY) {
+            Log.e(Utils.TAG,"Swiping...");
             if (Utils.getID() > -1) {
                 Utils.nextID();
                 loadPosition.setVisibility(View.VISIBLE);
             }
             return super.onFling(e1, e2, velocityX, velocityY);
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            super.onDown(e);
+            return true;
         }
     }
 
@@ -253,21 +263,22 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void run() {
-            String message;
+
             byte[] buffer = new byte[MAX_UDP_DATAGRAM_LEN];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
             DatagramSocket socket = null;
             try {
 
                 socket= new DatagramSocket(Utils.LOCAL_PORT);
-                socket.setTrafficClass( 0x04 ); //IPTOS_RELIABILITY
+                //socket.setTrafficClass( 0x04 ); //IPTOS_RELIABILITY
+                socket.setTrafficClass( 0x10 ); //IPTOS_LOW_DELAY
+
 
                 while(running) {
                     socket.receive(packet);
-                    message = new String(buffer, 0, packet.getLength());
+                    lastMessage = new String(buffer, 0, packet.getLength());
+                    //Log.e(Utils.TAG,lastMessage);
                     runOnUiThread(parseMessage);
-
-                    lastMessage = message;
                 }
             } catch (Throwable e) {
 

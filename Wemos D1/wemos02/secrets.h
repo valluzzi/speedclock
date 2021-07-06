@@ -22,8 +22,6 @@
 //
 // Created:     19/06/2021
 //-------------------------------------------------------------------------------
-#define SECRET_SSID_1 "Casa"
-#define SECRET_PASS_1 "......."
 
-#define SECRET_SSID_2 "arcoasd"
-#define SECRET_PASS_2 "......."
+#define SSID_NAME "Casa"
+#define PASSWORD "annaanna"

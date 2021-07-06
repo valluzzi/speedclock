@@ -27,7 +27,7 @@
 
 #define PACKET_SIZE 32
 
-#define ID 0  //foot-board id 0,1,2,...
+#define ID 1  //foot-board id 0,1,2,...
 #define localPort 10999      // local port to listen on
 #define remotePort 11000     // remote display port
 

@@ -15,12 +15,12 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 //
 //
-// Name:         wemos02.ino
+// Name:         wemos01.ino
 // Purpose:      A clock for speed climb
 //
 // Author:      Luzzi Valerio
 //
-// Created:     26/06/2021
+// Created:     19/06/2021
 //-------------------------------------------------------------------------------
 #include "secrets.h" 
 #include "functions.h" 
@@ -52,7 +52,15 @@ void setup() {
   //Initialize serial:
   Serial.begin(115200);
 
-  WiFiSetup();
+  //WiFiSetup();
+  if (WiFiSearchFor(SSID_NAME)){
+  
+    //COnnect as WiFi_STA client
+      WiFiSetup();
+  }
+  else{ //Create a WiFi Network
+      WiFiSoftAP();
+  }
   
   changeStateTo(IDLE);
 
@@ -69,8 +77,10 @@ void loop() {
           int n = Udp.parsePacket();
           if (n){
               Udp.read(packet,PACKET_SIZE);
+              Serial.println("packet received!!!");
               String id = String(packet[0]);
               if (id.toInt() == ID ){
+                   
                    //We receive a packet
                    //may be a reset command
                    changeStateTo(IDLE);

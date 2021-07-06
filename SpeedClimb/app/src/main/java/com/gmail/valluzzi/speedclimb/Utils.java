@@ -18,7 +18,7 @@ public class Utils {
 
     public static final String TAG = "SpeedClimb";
 
-    private static int ID = -1;
+    public static int ID = -1;
 
     private static Positions positions;
 
@@ -82,9 +82,10 @@ public class Utils {
             return " ";
     }
 
-    public static void nextID() {
+    public static int nextID() {
         if (positions != null)
             ID = positions.getNextID();
+        return ID;
     }
 
     public static void addNewPosition(int newPosition) {

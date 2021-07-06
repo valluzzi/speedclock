@@ -14,17 +14,21 @@
         android:layout_height="288dp"
         android:ems="10"
         android:focusableInTouchMode="false"
+        android:fontFamily="sans-serif-condensed-light"
         android:format="%sss"
         android:gravity="center"
         android:inputType="time"
         android:singleLine="true"
         android:text="@string/_45"
         android:textAllCaps="false"
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:textColor="@android:color/darker_gray"
-        android:textSize="150sp"
+        android:textSize="180sp"
+        android:textStyle="italic"
         app:fontFamily="sans-serif-condensed-light"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.496"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
@@ -50,10 +54,10 @@
         android:contentDescription="@string/arrow_down"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.499"
+        app:layout_constraintHorizontal_bias="0.314"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/weight"
-        app:layout_constraintVertical_bias="0.652"
+        app:layout_constraintVertical_bias="0.0"
         app:srcCompat="@android:drawable/arrow_down_float"
         tools:visibility="gone" />
 
@@ -68,6 +72,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/editText"
         tools:visibility="visible" />
+
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:background="@drawable/button_background"
+        android:backgroundTint="@color/colorAccent"
+        android:fontFamily="sans-serif-condensed-medium"
+        android:text="1"
+        android:textAlignment="center"
+
+        android:textAppearance="@style/TextAppearance.AppCompat.Large"
+        android:textColor="@color/cardview_light_background"
+        android:textSize="36sp"
+        app:cornerRadius="56dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/editText" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
