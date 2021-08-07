@@ -39,8 +39,6 @@
 unsigned long ts;  //timestamp of start
 unsigned long te;  //timestamp of end
 
-
-
 WiFiUDP Udp;
 const IPAddress broadcastIp(255,255,255,255);
 
@@ -66,13 +64,53 @@ void printWiFiStatus() {
   }
 }
 
+bool WiFiSearchFor(char* ssid){
+
+  for(int i=0;i<3;i++){
+    
+    delay(1000);
+    
+    if (DEBUG){
+      Serial.println("** Scan Networks **");
+    }
+    
+    int n = WiFi.scanNetworks();
+  
+    if (n == -1) {
+        return false;
+    }
+  
+    // print the list of networks seen:
+    if (DEBUG){
+        Serial.print("number of available networks:");
+        Serial.println(n);
+    }
+    // print the network number and name for each network found:
+    for (int j = 0; j < n; j++) {
+        if (DEBUG){
+            Serial.print(j);
+            Serial.print(") ");
+            Serial.print(WiFi.SSID(j));
+            Serial.print("\tSignal: ");
+            Serial.print(WiFi.RSSI(j));
+            Serial.println(" dBm");
+        }
+        if (WiFi.SSID(j).equals(ssid)){
+          return true;
+        }
+    }
+    
+  }
+  return false;
+}
+
 /**
  * WiFISetup - connect to a WiFi Networka and prepare UDP port
  */
 void WiFiSetup(){
 
   WiFi.mode(WIFI_STA);
-  WiFi.begin(SECRET_SSID_1, SECRET_PASS_1);
+
 
   // check for the presence of the shield:
   while (WiFi.status() == WL_NO_SHIELD) {
@@ -80,10 +118,17 @@ void WiFiSetup(){
       delay(1000);
   }
 
+  if (WiFiSearchFor(SECRET_SSID_1)){
+      WiFi.begin(SECRET_SSID_1, SECRET_PASS_1);
+  }else{
+      WiFi.begin(SECRET_SSID_2, SECRET_PASS_2);
+  }
+  
   // attempt to connect to WiFi network:
   while ( WiFi.status() != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
-    Serial.println(SECRET_SSID_1);
+    Serial.println(WiFi.SSID());
+    
     // wait 2 seconds for connection:
     Serial.println("------------------------------------------------");
     delay(2000);
